@@ -1,0 +1,33 @@
+doctype html
+html
+  head
+    title Express App
+    link(rel='stylesheet' href='/bower_components/bootstrap/dist/css/bootstrap.min.css')
+    link(rel='stylesheet' href='/css/main.css')
+  body
+    nav.navbar.navbar-expand-lg.navbar-dark.bg-dark
+      a.navbar-brand(href='/') Express App
+      button.navbar-toggler(type='button', data-toggle='collapse', data-target='#navbarSupportedContent', aria-controls='navbarSupportedContent', aria-expanded='false', aria-label='Toggle navigation')
+        span.navbar-toggler-icon
+      #navbarSupportedContent.collapse.navbar-collapse
+        ul.navbar-nav.mr-auto
+          li.nav-item.active
+            a.nav-link(href='/')
+              | Home 
+              span.sr-only (current)
+          li.nav-item
+            a.nav-link(href='/articles/add') Add article
+    br
+    .container
+      != messages('message', locals)
+      if errors
+        each error, i in errors
+          div(class="alert alert-danger") #{error.msg}
+      block content
+      br
+      hr
+      footer
+        p Copyleft never
+    script(src='/bower_components/jquery/dist/jquery.min.js')
+    script(src='/bower_components/bootstrap/dist/js/bootstrap.min.js')
+    script(src='/js/main.js')
