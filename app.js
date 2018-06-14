@@ -5,9 +5,11 @@ const bodyParser = require('body-parser')
 const session = require('express-session')
 const expressValidator = require('express-validator')
 const flash = require('connect-flash')
+const passport = require('passport')
+const config = require('./config/database')
 
 // conect to database
-mongoose.connect('mongodb://localhost/expressdb')
+mongoose.connect(config.database)
 let db = mongoose.connection
 
 //check connection
@@ -40,14 +42,14 @@ app.use(express.static(path.join(__dirname, 'public')))
 
 // express session middleware
 app.use(session({
-  secret: 'keyboard cat',
+  secret: '🐈',
   resave: true,
   saveUninitialized: true
 }))
 
 // express messages middelware
 app.use(require('connect-flash')());
-app.use(function (req, res, next) {
+app.use((req, res, next) => {
   res.locals.messages = require('express-messages')(req, res);
   next();
 })
@@ -69,6 +71,18 @@ app.use(expressValidator({
     }
   }
 }))
+
+// passport config
+require('./config/passport')(passport)
+// passport middleware
+app.use(passport.initialize())
+app.use(passport.session())
+
+// global user variable
+app.get('*', (req, res, next) => {
+  res.locals.user = req.user || null
+  next()
+})
 // home route
 app.get('/', (req, res) => {
   Article.find({}, (err, articles) => {
@@ -82,87 +96,11 @@ app.get('/', (req, res) => {
     }
   })
 })
-
-// add article route
-app.get('/articles/add', (req, res) => {
-  res.render('add_article', {
-    title: 'Add article'
-  })
-})
-
-// add submit POST route
-app.post('/articles/add', (req,res) => {
-  req.checkBody('title', 'Title is required').notEmpty();
-  req.checkBody('author', 'Author is required').notEmpty();
-  req.checkBody('body', 'Body is required').notEmpty();
-
-  // get errors if any
-  let errors = req.validationErrors()
-  if(errors) {
-    res.render('add_article', {
-      title: 'Add article',
-      errors:errors
-    })
-  } else {
-    let article = new Article()
-    article.title = req.body.title
-    article.author = req.body.author
-    article.body = req.body.body
-    article.save((err) => {
-      if(err) {
-        console.log(err)
-      } else {
-        req.flash('success', 'Article Added')
-        res.redirect('/')
-      }
-    })
-  }
-})
-// get single article
-app.get('/article/:id', (req, res) => {
-  Article.findById(req.params.id, (err, article) => {
-    res.render('article', {
-      article: article
-    })
-  })
-})
-// get single article editing
-app.get('/article/edit/:id', (req, res) => {
-  Article.findById(req.params.id, (err, article) => {
-    res.render('edit_article', {
-      article: article
-    })
-  })
-})
-
-// update submit POST route
-app.post('/articles/edit/:id', (req,res) => {
-  let article = {}
-  article.title = req.body.title
-  article.author = req.body.author
-  article.body = req.body.body
-  let query = {_id:req.params.id}
-  Article.update(query, article, (err) => {
-    if(err) {
-      console.log(err)
-    } else {
-      req.flash('success', 'Article Updated')
-      res.redirect('/')
-    }
-  })
-})
-// delete article
-app.delete('/article/:id', (req, res) => {
-  let query = {_id: req.params.id}
-  Article.remove(query, (err) => {
-    if(err) {
-      console.log(err)
-    } else {
-      req.flash('success', 'Article Added')
-      res.send('Success')
-    }
-  })
-})
+// routee files
+let articles = require('./routes/articles')
+let users = require('./routes/users')
+app.use('/articles', articles)
+app.use('/users', users)
 // start server on port 3000
 app.listen(3000, () => {
   console.log('Server started on port 3000...')
